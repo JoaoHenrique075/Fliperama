@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>🐍 Snake Synthwave</title>
+
+<!-- Fontes estilo retrô -->
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --pink: #ff2dfb;
+    --magenta: #d100d1;
+    --cyan: #00eaff;
+    --purple: #7a00ff;
+    --yellow: #f7ff00;
+    --bg: #0b0014;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    overflow: hidden;
+    font-family: 'Press Start 2P', monospace;
+    color: var(--cyan);
+  }
+
+  /* Fundo com horizonte e grid neon */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+      linear-gradient(to bottom, #3a004e 0%, #000010 40%) no-repeat,
+      radial-gradient(circle at center top, #ff0088 0%, rgba(255,0,136,0) 60%) no-repeat;
+    background-blend-mode: screen;
+    animation: glow 4s ease-in-out infinite alternate;
+    z-index: -3;
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    bottom: 0; left: 0;
+    width: 100%;
+    height: 60%;
+    background-image:
+      linear-gradient(to right, rgba(0,234,255,0.4) 1px, transparent 1px),
+      linear-gradient(to top, rgba(255,45,251,0.25) 1px, transparent 1px);
+    background-size: 40px 40px;
+    transform: perspective(300px) rotateX(60deg);
+    transform-origin: bottom;
+    animation: gridMove 8s linear infinite;
+    z-index: -2;
+  }
+
+  @keyframes gridMove {
+    0% { background-position-y: 0px; }
+    100% { background-position-y: 40px; }
+  }
+
+  @keyframes glow {
+    from { opacity: 0.9; }
+    to { opacity: 1; filter: brightness(1.2); }
+  }
+
+  /* HEADER ESTILO FLIPERAMA */
+  header {
+    position: relative;
+    text-align: center;
+    padding: 20px 0 10px;
+    z-index: 2;
+  }
+
+  header h1 {
+    font-family: 'Press Start 2P';
+    font-size: 1.4rem;
+    color: var(--pink);
+    text-shadow:
+      0 0 6px var(--pink),
+      0 0 16px var(--magenta),
+      0 0 40px var(--cyan);
+    letter-spacing: 4px;
+    margin: 0;
+    animation: flicker 2.5s infinite alternate;
+  }
+
+  header h2 {
+    font-family: 'VT323';
+    color: var(--cyan);
+    font-size: 1.2rem;
+    text-shadow:
+      0 0 10px var(--cyan),
+      0 0 20px var(--purple);
+    margin-top: 6px;
+  }
+
+  @keyframes flicker {
+    0%, 18%, 22%, 25%, 53%, 57%, 100% {
+      opacity: 1;
+    }
+    20%, 24%, 55% {
+      opacity: 0.6;
+    }
+  }
+
+  /* Canvas */
+  canvas {
+    background: rgba(0,0,0,0.8);
+    border: 4px solid var(--magenta);
+    box-shadow:
+      0 0 20px var(--magenta),
+      0 0 40px var(--cyan);
+    border-radius: 10px;
+    image-rendering: pixelated;
+    display: block;
+    margin: 20px auto;
+  }
+
+  /* HUD */
+  .hud {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    font-size: 0.8rem;
+    text-shadow: 0 0 10px var(--cyan);
+    color: var(--cyan);
+  }
+
+  .scoreBox {
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--cyan);
+    border-radius: 6px;
+  }
+
+  .btn {
+    background: transparent;
+    border: 1px solid var(--pink);
+    color: var(--pink);
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+
+  .btn:hover {
+    background: var(--pink);
+    color: #000;
+    box-shadow: 0 0 15px var(--pink);
+  }
+
+  .crt {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(
+        rgba(255,255,255,0.03) 0px,
+        rgba(0,0,0,0.05) 2px,
+        rgba(0,0,0,0.05) 4px
+      );
+    z-index: 10;
+  }
+
+  footer {
+    text-align: center;
+    color: var(--pink);
+    text-shadow: 0 0 10px var(--pink);
+    font-family: 'VT323';
+    margin-top: 10px;
+  }
+</style>
+</head>
+
+<body>
+  <header>
+    <h1>NEON ARCADE</h1>
+    <h2>Snake Synthwave</h2>
+  </header>
+
+  <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+  <div class="hud">
+    <div class="scoreBox">SCORE: <span id="score">0</span></div>
+    <div class="scoreBox">HI-SCORE: <span id="highScore">0</span></div>
+    <button class="btn" id="btnRestart">RESTART</button>
+    <button class="btn" onclick="location.href='index.html'">MENU</button>
+  </div>
+
+  <footer>🌆 Desenvolvido por Fliperama © 2025</footer>
+  <div class="crt"></div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const scoreEl = document.getElementById('score');
+  const highScoreEl = document.getElementById('highScore');
+  const restartBtn = document.getElementById('btnRestart');
+
+  const GRID = 20;
+  const CELL = canvas.width / GRID;
+  let speed = 100;
+  let snake = [];
+  let dir = 'RIGHT';
+  let nextDir = dir;
+  let food = null;
+  let score = 0;
+  let loop = null;
+  let running = false;
+  let hue = 0;
+
+  let highScore = localStorage.getItem('snakeHighScore') || 0;
+  highScoreEl.textContent = highScore;
+
+  function resetGame() {
+    snake = [
+      {x: 9, y: 10},
+      {x: 8, y: 10},
+      {x: 7, y: 10}
+    ];
+    dir = 'RIGHT';
+    nextDir = dir;
+    spawnFood();
+    score = 0;
+    scoreEl.textContent = score;
+    running = true;
+    if (loop) clearInterval(loop);
+    loop = setInterval(tick, speed);
+    draw();
+  }
+
+  function spawnFood() {
+    let valid = false;
+    while (!valid) {
+      const pos = {
+        x: Math.floor(Math.random() * GRID),
+        y: Math.floor(Math.random() * GRID)
+      };
+      if (!snake.some(s => s.x === pos.x && s.y === pos.y)) {
+        food = pos;
+        valid = true;
+      }
+    }
+  }
+
+  function tick() {
+    if (!running) return;
+    if (!isOpposite(nextDir, dir)) dir = nextDir;
+
+    const head = { ...snake[0] };
+    if (dir === 'LEFT') head.x--;
+    if (dir === 'RIGHT') head.x++;
+    if (dir === 'UP') head.y--;
+    if (dir === 'DOWN') head.y++;
+
+    // colisões
+    if (head.x < 0 || head.x >= GRID || head.y < 0 || head.y >= GRID ||
+        snake.some(seg => seg.x === head.x && seg.y === head.y)) {
+      return gameOver();
+    }
+
+    snake.unshift(head);
+
+    if (head.x === food.x && head.y === food.y) {
+      score++;
+      scoreEl.textContent = score;
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('snakeHighScore', highScore);
+        highScoreEl.textContent = highScore;
+      }
+      spawnFood();
+    } else {
+      snake.pop();
+    }
+
+    draw();
+  }
+
+  function draw() {
+    hue = (hue + 2) % 360;
+    const neon = `hsl(${hue}, 100%, 60%)`;
+
+    ctx.fillStyle = "rgba(0,0,0,0.7)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // comida neon
+    ctx.shadowColor = '#ff2dfb';
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = '#ff2dfb';
+    ctx.fillRect(food.x * CELL + 2, food.y * CELL + 2, CELL - 4, CELL - 4);
+    ctx.shadowBlur = 0;
+
+    // cobra com gradiente neon
+    for (let i = 0; i < snake.length; i++) {
+      const seg = snake[i];
+      const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      grad.addColorStop(0, neon);
+      grad.addColorStop(1, '#00eaff');
+      ctx.fillStyle = grad;
+      ctx.fillRect(seg.x * CELL + 1, seg.y * CELL + 1, CELL - 2, CELL - 2);
+    }
+  }
+
+  function gameOver() {
+    running = false;
+    clearInterval(loop);
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#ff2dfb';
+    ctx.textAlign = 'center';
+    ctx.font = '12px "Press Start 2P"';
+    ctx.fillText('💀 GAME OVER 💀', canvas.width/2, canvas.height/2 - 10);
+    ctx.fillStyle = '#00eaff';
+    ctx.fillText('SCORE: ' + score, canvas.width/2, canvas.height/2 + 15);
+  }
+
+  function isOpposite(a, b) {
+    return (a === 'LEFT' && b === 'RIGHT') || (a === 'RIGHT' && b === 'LEFT') ||
+           (a === 'UP' && b === 'DOWN') || (a === 'DOWN' && b === 'UP');
+  }
+
+  window.addEventListener('keydown', e => {
+    if (!running && e.key === 'Enter') return resetGame();
+    switch (e.key) {
+      case 'ArrowLeft': nextDir = 'LEFT'; break;
+      case 'ArrowRight': nextDir = 'RIGHT'; break;
+      case 'ArrowUp': nextDir = 'UP'; break;
+      case 'ArrowDown': nextDir = 'DOWN'; break;
+      case 'p': case 'P': togglePause(); break;
+    }
+  });
+
+  function togglePause() {
+    if (running) {
+      running = false;
+      clearInterval(loop);
+    } else {
+      running = true;
+      loop = setInterval(tick, speed);
+    }
+  }
+
+  restartBtn.addEventListener('click', resetGame);
+
+  resetGame();
+})();
+</script>
+</body>
+</html>

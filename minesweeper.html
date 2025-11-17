@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💣 Neon Minesweeper</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pink: #ff2dfb;
+    --magenta: #d100d1;
+    --cyan: #00eaff;
+    --purple: #7a00ff;
+    --bg: #0b0014;
+  }
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Press Start 2P', monospace;
+    background: var(--bg);
+    color: var(--cyan);
+    overflow: hidden;
+  }
+
+  header {
+    text-align: center;
+    padding: 20px;
+    color: var(--pink);
+    text-shadow: 0 0 10px var(--pink), 0 0 20px var(--magenta), 0 0 40px var(--cyan);
+  }
+
+  canvas {
+    display: block;
+    margin: 0 auto;
+    border: 2px solid var(--cyan);
+    box-shadow: 0 0 20px var(--cyan);
+    background: #100020;
+  }
+
+  .controls {
+    text-align: center;
+    margin: 10px 0;
+  }
+
+  select, button {
+    font-family: 'Press Start 2P', monospace;
+    background: rgba(0,0,0,0.6);
+    border: 2px solid var(--pink);
+    color: var(--pink);
+    padding: 8px 10px;
+    margin: 4px;
+    cursor: pointer;
+    text-shadow: 0 0 8px var(--pink);
+    transition: 0.2s;
+  }
+
+  button:hover, select:hover {
+    background: var(--pink);
+    color: #000;
+    box-shadow: 0 0 15px var(--pink), 0 0 25px var(--cyan);
+  }
+
+  footer {
+    text-align: center;
+    margin-top: 15px;
+    color: var(--pink);
+    font-size: 12px;
+    text-shadow: 0 0 10px var(--pink);
+  }
+
+  .crt {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(rgba(255,255,255,0.02) 0, rgba(0,0,0,0.05) 2px);
+  }
+</style>
+</head>
+<body>
+<header>
+  💣 NEON MINESWEEPER
+</header>
+
+<div class="controls">
+  <label>Dificuldade:</label>
+  <select id="difficulty">
+    <option value="easy">Fácil</option>
+    <option value="medium">Médio</option>
+    <option value="hard">Difícil</option>
+  </select>
+
+  <label>Geração:</label>
+  <select id="mode">
+    <option value="random">Aleatório</option>
+    <option value="safe">Início Seguro</option>
+    <option value="logic">Pura Lógica</option>
+  </select>
+
+  <button id="reset">🔁 Novo Jogo</button>
+</div>
+
+<canvas id="game" width="600" height="600"></canvas>
+
+<footer>🌆 Desenvolvido por Fliperama © 2025</footer>
+<div class="crt"></div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const tileSize = 30;
+let rows, cols, mines;
+let board, covered, flagged, gameOver, victory, revealed;
+let startTime, mode;
+
+const colors = {
+  bg: "#100020",
+  grid: "#0ff",
+  covered: "#400050",
+  revealed: "#210030",
+  mine: "#ff2dfb",
+  text: "#00eaff"
+};
+
+function setup() {
+  const diff = document.getElementById("difficulty").value;
+  mode = document.getElementById("mode").value;
+
+  if (diff === "easy") { rows = 9; cols = 9; mines = 10; }
+  if (diff === "medium") { rows = 16; cols = 16; mines = 40; }
+  if (diff === "hard") { rows = 16; cols = 30; mines = 99; }
+
+  canvas.width = cols * tileSize;
+  canvas.height = rows * tileSize;
+
+  board = Array(rows).fill().map(()=>Array(cols).fill(0));
+  covered = Array(rows).fill().map(()=>Array(cols).fill(true));
+  flagged = Array(rows).fill().map(()=>Array(cols).fill(false));
+  revealed = 0;
+  gameOver = false;
+  victory = false;
+  startTime = null;
+
+  generateMines();
+  draw();
+}
+
+function generateMines() {
+  let positions = [];
+  for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) positions.push([r,c]);
+  let minesPos = [];
+
+  if (mode === "random") {
+    minesPos = positions.sort(()=>Math.random()-0.5).slice(0,mines);
+  } else if (mode === "logic") {
+    // Geração "lógica" = minas mais espaçadas
+    while (minesPos.length < mines) {
+      const pos = positions[Math.floor(Math.random()*positions.length)];
+      if (!minesPos.some(([r,c]) => Math.abs(r-pos[0])<2 && Math.abs(c-pos[1])<2))
+        minesPos.push(pos);
+    }
+  } else { // safe
+    minesPos = positions.sort(()=>Math.random()-0.5).slice(0,mines);
+  }
+
+  for (const [r,c] of minesPos) board[r][c] = "M";
+
+  for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) {
+    if (board[r][c]==="M") continue;
+    let count=0;
+    for (let dr=-1;dr<=1;dr++) for (let dc=-1;dc<=1;dc++) {
+      if (r+dr>=0 && r+dr<rows && c+dc>=0 && c+dc<cols && board[r+dr][c+dc]==="M")
+        count++;
+    }
+    board[r][c]=count;
+  }
+}
+
+function draw() {
+  ctx.fillStyle = colors.bg;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle = colors.grid;
+
+  for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) {
+    const x=c*tileSize, y=r*tileSize;
+    ctx.strokeRect(x,y,tileSize,tileSize);
+    if (covered[r][c]) {
+      ctx.fillStyle = flagged[r][c]? "#ff2dfb" : colors.covered;
+      ctx.fillRect(x+2,y+2,tileSize-4,tileSize-4);
+    } else {
+      ctx.fillStyle = colors.revealed;
+      ctx.fillRect(x+2,y+2,tileSize-4,tileSize-4);
+      const v=board[r][c];
+      if (v==="M") {
+        ctx.fillStyle = colors.mine;
+        ctx.font = "20px 'Press Start 2P'";
+        ctx.fillText("💣", x+8, y+22);
+      } else if (v>0) {
+        ctx.fillStyle = colors.text;
+        ctx.font = "bold 14px 'Press Start 2P'";
+        ctx.fillText(v, x+10, y+20);
+      }
+    }
+  }
+}
+
+function reveal(r,c) {
+  if (gameOver||victory||!covered[r][c]) return;
+  covered[r][c]=false;
+  revealed++;
+  if (board[r][c]==="M") {
+    gameOver=true;
+    showAll();
+  } else if (board[r][c]===0) {
+    for (let dr=-1;dr<=1;dr++) for (let dc=-1;dc<=1;dc++) {
+      const nr=r+dr, nc=c+dc;
+      if (nr>=0&&nc>=0&&nr<rows&&nc<cols&&covered[nr][nc]) reveal(nr,nc);
+    }
+  }
+  checkWin();
+  draw();
+}
+
+function showAll(){
+  for (let r=0;r<rows;r++) for (let c=0;c<cols;c++) covered[r][c]=false;
+}
+
+function toggleFlag(r,c){
+  if (!covered[r][c]||gameOver||victory) return;
+  flagged[r][c]=!flagged[r][c];
+  draw();
+}
+
+function checkWin(){
+  if (revealed === rows*cols - mines) {
+    victory=true;
+    showAll();
+  }
+}
+
+canvas.addEventListener("click", e=>{
+  const rect = canvas.getBoundingClientRect();
+  const c = Math.floor((e.clientX-rect.left)/tileSize);
+  const r = Math.floor((e.clientY-rect.top)/tileSize);
+  if (!startTime) startTime=Date.now();
+  reveal(r,c);
+});
+
+canvas.addEventListener("contextmenu", e=>{
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const c = Math.floor((e.clientX-rect.left)/tileSize);
+  const r = Math.floor((e.clientY-rect.top)/tileSize);
+  toggleFlag(r,c);
+});
+
+document.getElementById("reset").onclick=setup;
+
+setup();
+</script>
+</body>
+</html>

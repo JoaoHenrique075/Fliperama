@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎮 NEON ARCADE</title>
+
+<!-- Fontes retrô -->
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --pink: #ff2dfb;
+    --magenta: #d100d1;
+    --cyan: #00eaff;
+    --purple: #7a00ff;
+    --bg: #0b0014;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    overflow: hidden;
+    font-family: 'Press Start 2P', monospace;
+    color: var(--cyan);
+  }
+
+  /* Fundo Synthwave */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background:
+      linear-gradient(to bottom, #3a004e 0%, #000010 40%) no-repeat,
+      radial-gradient(circle at center top, #ff0088 0%, rgba(255,0,136,0) 60%) no-repeat;
+    background-blend-mode: screen;
+    animation: glow 4s ease-in-out infinite alternate;
+    z-index: -3;
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    bottom: 0; left: 0;
+    width: 100%;
+    height: 60%;
+    background-image:
+      linear-gradient(to right, rgba(0,234,255,0.4) 1px, transparent 1px),
+      linear-gradient(to top, rgba(255,45,251,0.25) 1px, transparent 1px);
+    background-size: 40px 40px;
+    transform: perspective(300px) rotateX(60deg);
+    transform-origin: bottom;
+    animation: gridMove 8s linear infinite;
+    z-index: -2;
+  }
+
+  @keyframes gridMove {
+    0% { background-position-y: 0px; }
+    100% { background-position-y: 40px; }
+  }
+
+  @keyframes glow {
+    from { opacity: 0.9; }
+    to { opacity: 1; filter: brightness(1.2); }
+  }
+
+  header {
+    text-align: center;
+    padding: 50px 0 20px;
+  }
+
+  header h1 {
+    font-size: 2rem;
+    color: var(--pink);
+    text-shadow: 0 0 8px var(--pink), 0 0 20px var(--magenta), 0 0 40px var(--cyan);
+    letter-spacing: 4px;
+    animation: flicker 2.5s infinite alternate;
+  }
+
+  header h2 {
+    font-family: 'VT323';
+    color: var(--cyan);
+    font-size: 1.2rem;
+    text-shadow: 0 0 10px var(--cyan), 0 0 20px var(--purple);
+    margin-top: 6px;
+  }
+
+  @keyframes flicker {
+    0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; }
+    20%, 24%, 55% { opacity: 0.6; }
+  }
+
+  .menu {
+    text-align: center;
+    margin-top: 40px;
+  }
+
+  .btn {
+    display: block;
+    width: 250px;
+    margin: 15px auto;
+    padding: 15px 10px;
+    border: 2px solid var(--pink);
+    border-radius: 10px;
+    background: rgba(0,0,0,0.4);
+    color: var(--pink);
+    text-decoration: none;
+    font-family: 'VT323', monospace;
+    font-size: 1.2rem;
+    transition: 0.3s;
+    text-shadow: 0 0 8px var(--pink);
+  }
+
+  .btn:hover {
+    background: var(--pink);
+    color: #000;
+    box-shadow: 0 0 20px var(--pink), 0 0 40px var(--cyan);
+    transform: scale(1.05);
+  }
+
+  .description {
+    text-align: center;
+    font-family: 'VT323';
+    color: var(--cyan);
+    margin: 20px;
+    font-size: 1rem;
+    text-shadow: 0 0 10px var(--cyan);
+  }
+
+  footer {
+    text-align: center;
+    color: var(--pink);
+    text-shadow: 0 0 10px var(--pink);
+    font-family: 'VT323';
+    position: fixed;
+    bottom: 15px;
+    width: 100%;
+  }
+
+  .crt {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    background: repeating-linear-gradient(rgba(255,255,255,0.03) 0px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 4px);
+    z-index: 10;
+  }
+
+  /* Animação de entrada */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(10px);
+    animation: appear 1s ease forwards;
+  }
+
+  @keyframes appear {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+</head>
+
+<body>
+<header>
+  <h1>NEON ARCADE</h1>
+  <h2>Reviva a era dos fliperamas!</h2>
+</header>
+
+<div class="description fade-in">
+  Escolha seu jogo e mergulhe no brilho dos anos 80.
+</div>
+
+<div class="menu fade-in" style="animation-delay: 0.5s;">
+  <a href="snake.html" class="btn">🐍 Snake</a>
+  <a href="pong.html" class="btn">🏓 Pong</a>
+  <a href="tetris.html" class="btn">🧱 Tetris</a>
+  <a href="quiz.html" class="btn">🧠 Quiz</a>
+  <a href="blackjack.html" class="btn">🃏 Blackjack</a>
+  <a href="minesweeper.html" class="btn">💣 Minesweeper</a>
+  <a href="flappy.html" class="btn"> Flappy</a>
+</div>
+
+<footer>🌆 Desenvolvido por Fliperama © 2025</footer>
+<div class="crt"></div>
+</body>
+</html>

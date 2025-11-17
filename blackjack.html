@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>🃏 Blackjack — NEON ARCADE</title>
+
+<!-- Fontes retrô -->
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --pink:#ff2dfb;
+    --magenta:#d100d1;
+    --cyan:#00eaff;
+    --bg:#0b0014;
+    --card-bg:#ffffff;
+    --card-back:#0f7a0f;
+    --table:#07220a;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:var(--bg);font-family:'Press Start 2P',monospace;color:var(--cyan);overflow:hidden}
+  /* synthwave background like the other pages */
+  body::before {
+    content:"";position:fixed;top:0;left:0;width:100%;height:100%;
+    background: linear-gradient(to bottom,#3a004e 0%, #000010 40%), radial-gradient(circle at center top,#ff0088 0%, rgba(255,0,136,0) 60%);
+    background-blend-mode:screen; z-index:-3; opacity:0.98; animation: glow 4s ease-in-out infinite alternate;
+  }
+  body::after {
+    content:"";position:fixed;bottom:0;left:0;width:100%;height:60%;
+    background-image: linear-gradient(to right, rgba(0,234,255,0.4) 1px, transparent 1px), linear-gradient(to top, rgba(255,45,251,0.25) 1px, transparent 1px);
+    background-size: 40px 40px; transform: perspective(300px) rotateX(60deg); transform-origin:bottom; animation: gridMove 8s linear infinite; z-index:-2;
+  }
+  @keyframes gridMove{0%{background-position-y:0}100%{background-position-y:40px}}
+  @keyframes glow{from{opacity:0.9}to{opacity:1;filter:brightness(1.2)}}
+
+  header{ text-align:center;padding:18px 0 8px;z-index:2 }
+  header h1{font-size:1.6rem;color:var(--pink);text-shadow:0 0 8px var(--pink),0 0 20px var(--magenta),0 0 40px var(--cyan);letter-spacing:4px;animation:flicker 2.5s infinite alternate;margin:0}
+  header h2{font-family:'VT323';color:var(--cyan);font-size:1rem;margin:6px 0 0}
+  @keyframes flicker{0%,18%,22%,25%,53%,57%,100%{opacity:1}20%,24%,55%{opacity:0.6}}
+
+  .board-wrap{display:flex;gap:28px;align-items:flex-start;justify-content:center;padding:20px}
+  canvas#table{ background: var(--table); border-radius:12px; border:4px solid var(--magenta); box-shadow:0 0 20px var(--magenta),0 0 40px var(--cyan); }
+  .side{width:320px; color:var(--cyan); font-family:'VT323';}
+  .side .box{ background: rgba(0,0,0,0.6); border:2px solid rgba(255,255,255,0.03); padding:12px; border-radius:8px; margin-bottom:12px; }
+  .hud{ display:flex; gap:14px; justify-content:center; align-items:center; margin-top:6px; }
+  .btn{ background:transparent; border:1px solid var(--pink); color:var(--pink); padding:10px 12px; border-radius:8px; cursor:pointer; font-family:'VT323'; text-decoration:none; display:inline-block }
+  .btn:hover{ background:var(--pink); color:#000; box-shadow:0 0 15px var(--pink) }
+
+  .card-font{ font-family: 'VT323', monospace; font-size:20px; }
+  footer{ text-align:center; color:var(--pink); text-shadow:0 0 10px var(--pink); font-family:'VT323'; position:fixed; bottom:12px; width:100% }
+
+  .crt{ position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none;
+    background: repeating-linear-gradient(rgba(255,255,255,0.03) 0px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 4px); z-index:10; }
+
+  /* mensagem modal simples */
+  .overlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:20; pointer-events:none }
+  .modal{ pointer-events:auto; background:rgba(0,0,0,0.9); border:2px solid var(--pink); padding:18px; border-radius:10px; text-align:center; color:var(--cyan) }
+
+  /* responsive */
+  @media (max-width:980px){
+    .board-wrap{flex-direction:column;align-items:center}
+    .side{width:90%}
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>NEON ARCADE</h1>
+    <h2>Blackjack Synthwave</h2>
+  </header>
+
+  <div class="board-wrap">
+    <!-- canvas table -->
+    <canvas id="table" width="880" height="420"></canvas>
+
+    <!-- side panel -->
+    <div class="side">
+      <div class="box">
+        <div style="font-size:0.8rem;color:var(--pink)">STATUS</div>
+        <div id="info" style="margin-top:8px;color:#cffeeb;font-family:VT323"></div>
+      </div>
+
+      <div class="box">
+        <div style="font-size:0.8rem;color:var(--pink)">PLACAR</div>
+        <div style="margin-top:8px;font-family:VT323">
+          <div>Fichas: <span id="fichas">100</span></div>
+          <div>Vitórias: <span id="vitorias">0</span></div>
+          <div>Derrotas: <span id="derrotas">0</span></div>
+          <div>Empates: <span id="empates">0</span></div>
+        </div>
+      </div>
+
+      <div class="box">
+        <div style="font-size:0.8rem;color:var(--pink)">CONTROLES</div>
+        <div style="margin-top:8px;font-family:VT323">
+          <div>- Pedir: botão "Pedir (Hit)"</div>
+          <div>- Parar: botão "Parar (Stand)"</div>
+          <div>- Nova Rodada: botão "Nova Rodada"</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button id="hitBtn" class="btn">Pedir (Hit)</button>
+        <button id="standBtn" class="btn">Parar (Stand)</button>
+        <button id="newBtn" class="btn" disabled>Nova Rodada</button>
+        <a class="btn" href="index.html">MENU</a>
+      </div>
+    </div>
+  </div>
+
+  <footer>🌆 Desenvolvido por Fliperama © 2025</footer>
+  <div class="crt"></div>
+
+  <!-- overlay message -->
+  <div id="overlay" class="overlay" style="display:none">
+    <div class="modal" id="modalText"></div>
+  </div>
+
+<script>
+/* Blackjack Synthwave - converted from python text-cards version
+   - deck, hit/stand, dealer auto, points calculation with A as 1/11
+   - canvas drawing of cards (rounded rect + text)
+   - localStorage: fichas, vitorias, derrotas, empates
+*/
+
+(() => {
+  // Canvas + size constants (match original card sizes roughly)
+  const canvas = document.getElementById('table');
+  const ctx = canvas.getContext('2d');
+
+  const CARD_W = 90, CARD_H = 130, CARD_PADDING = 12, CARD_RADIUS = 12;
+  const START_X = 40;
+  const DEALER_Y = 30;
+  const PLAYER_Y = 220;
+
+  // game state
+  let deck = [];
+  let player = [];
+  let dealer = [];
+  let fichas = parseInt(localStorage.getItem('bj_fichas')) || 100;
+  let vitorias = parseInt(localStorage.getItem('bj_vitorias')) || 0;
+  let derrotas = parseInt(localStorage.getItem('bj_derrotas')) || 0;
+  let empates = parseInt(localStorage.getItem('bj_empates')) || 0;
+  let roundActive = true;
+
+  // DOM
+  const infoEl = document.getElementById('info');
+  const fichasEl = document.getElementById('fichas');
+  const vitoriasEl = document.getElementById('vitorias');
+  const derrotasEl = document.getElementById('derrotas');
+  const empatesEl = document.getElementById('empates');
+  const hitBtn = document.getElementById('hitBtn');
+  const standBtn = document.getElementById('standBtn');
+  const newBtn = document.getElementById('newBtn');
+  const overlay = document.getElementById('overlay');
+  const modalText = document.getElementById('modalText');
+
+  // helpers: localStorage save
+  function saveStats(){
+    localStorage.setItem('bj_fichas', fichas);
+    localStorage.setItem('bj_vitorias', vitorias);
+    localStorage.setItem('bj_derrotas', derrotas);
+    localStorage.setItem('bj_empates', empates);
+  }
+
+  // create deck & shuffle
+  function criar_baralho(){
+    const naipes = ['♠','♥','♦','♣'];
+    const valores = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+    const b=[];
+    for(const v of valores) for(const n of naipes) b.push([v,n]);
+    // shuffle
+    for(let i=b.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [b[i],b[j]]=[b[j],b[i]];
+    }
+    return b;
+  }
+
+  // calculate points (A as 11 or 1)
+  function calcular_pontos(mao){
+    let total=0, ases=0;
+    for(const [valor] of mao){
+      if(['J','Q','K'].includes(valor)) total+=10;
+      else if(valor==='A'){ total+=11; ases++; }
+      else total+=parseInt(valor,10);
+    }
+    while(total>21 && ases>0){ total-=10; ases--; }
+    return total;
+  }
+
+  // canvas rounded rect
+  function roundedRect(ctx,x,y,w,h,r,opts={}){
+    const fill = opts.fill||'#fff';
+    const stroke = opts.stroke||'#222';
+    const lineWidth = opts.lineWidth||2;
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.lineWidth = lineWidth;
+    ctx.strokeStyle = stroke;
+    ctx.stroke();
+  }
+
+  // draw card; ocultar = back
+  function desenhar_carta(ctx,x,y,[valor,naipe],ocultar=false){
+    if(ocultar){
+      roundedRect(ctx,x,y,CARD_W,CARD_H,CARD_RADIUS,{fill: getComputedStyle(document.documentElement).getPropertyValue('--card-back') || '#0f7a0f', stroke:'#222'});
+      // pattern
+      ctx.strokeStyle = 'rgba(11,77,11,0.9)';
+      ctx.lineWidth = 3;
+      for(let i=0;i<6;i++){
+        ctx.beginPath();
+        ctx.moveTo(x+12 + i*12, y+12);
+        ctx.lineTo(x+12 + i*12 + 40, y+CARD_H-12);
+        ctx.stroke();
+      }
+      return;
+    }
+    roundedRect(ctx,x,y,CARD_W,CARD_H,CARD_RADIUS,{fill: getComputedStyle(document.documentElement).getPropertyValue('--card-bg') || '#fff', stroke:'#222'});
+    // central text
+    const texto = `${valor}${naipe}`;
+    ctx.fillStyle = (naipe==='♥' || naipe==='♦') ? '#b30000' : '#111';
+    ctx.font = "28px 'VT323', monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(texto, x + CARD_W/2, y + CARD_H/2);
+  }
+
+  function atualizar_interface(esconder_dealer=true){
+    // clear
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // table background (subtle)
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.fillRect(10,10,canvas.width-20,canvas.height-20);
+
+    // labels
+    ctx.fillStyle = "#fff";
+    ctx.font = "14px VT323, monospace";
+    ctx.textAlign = "left";
+    ctx.fillText("DEALER", START_X, DEALER_Y - 18);
+    // dealer cards
+    for(let i=0;i<dealer.length;i++){
+      const x = START_X + i * (CARD_W + CARD_PADDING);
+      desenhar_carta(ctx, x, DEALER_Y, dealer[i], (esconder_dealer && i===0));
+    }
+
+    // player
+    ctx.fillStyle = "#fff";
+    ctx.fillText("JOGADOR", START_X, PLAYER_Y - 18);
+    for(let i=0;i<player.length;i++){
+      const x = START_X + i * (CARD_W + CARD_PADDING);
+      desenhar_carta(ctx, x, PLAYER_Y, player[i], false);
+    }
+
+    // info panel
+    infoEl.innerHTML = `Fichas: ${fichas} &nbsp;&nbsp;|&nbsp;&nbsp; Vitória se ganhar: +10 &nbsp;&nbsp; Perda: -10`;
+    fichasEl.textContent = fichas;
+    vitoriasEl.textContent = vitorias;
+    derrotasEl.textContent = derrotas;
+    empatesEl.textContent = empates;
+
+    // score text
+    const jogadorPts = calcular_pontos(player);
+    const dealerPts = esconder_dealer ? '??' : calcular_pontos(dealer);
+    // draw small status on canvas top-right
+    ctx.fillStyle = "#cfead7";
+    ctx.font = "16px VT323, monospace";
+    ctx.textAlign = "right";
+    ctx.fillText(`Sua mão: ${jogadorPts}   Dealer: ${dealerPts}`, canvas.width - 20, 30);
+  }
+
+  // new round
+  function nova_rodada(){
+    deck = criar_baralho();
+    player = [ deck.pop(), deck.pop() ];
+    dealer = [ deck.pop(), deck.pop() ];
+    roundActive = true;
+    hitBtn.disabled = false;
+    standBtn.disabled = false;
+    newBtn.disabled = true;
+    atualizar_interface(true);
+    saveStats();
+  }
+
+  // hit
+  function pedir_carta(){
+    if(!roundActive) return;
+    player.push(deck.pop());
+    atualizar_interface(true);
+    const pts = calcular_pontos(player);
+    if(pts>21){
+      // bust
+      derrotas++;
+      fichas -= 10;
+      roundActive = false;
+      fim_rodada("Você estourou! Dealer vence.");
+    }
+    saveStats();
+  }
+
+  // stand
+  function parar(){
+    if(!roundActive) return;
+    // dealer plays until >=17
+    while(calcular_pontos(dealer) < 17){
+      dealer.push(deck.pop());
+    }
+    atualizar_interface(false);
+    const pj = calcular_pontos(player);
+    const pd = calcular_pontos(dealer);
+    if(pd>21 || pj>pd){
+      vitorias++; fichas += 10; fim_rodada("Você venceu!");
+    } else if(pd===pj){
+      empates++; fim_rodada("Empate!");
+    } else {
+      derrotas++; fichas -= 10; fim_rodada("Dealer venceu!");
+    }
+    saveStats();
+  }
+
+  function fim_rodada(mensagem){
+    roundActive = false;
+    hitBtn.disabled = true;
+    standBtn.disabled = true;
+    newBtn.disabled = false;
+    atualizar_interface(false);
+    mostrar_modal(mensagem);
+    // reset if fichas <= 0
+    if(fichas <= 0){
+      setTimeout(()=> {
+        mostrar_modal("Você ficou sem fichas! Reiniciando para 100.");
+        fichas = 100; vitorias = derrotas = empates = 0;
+        saveStats();
+      }, 700);
+    }
+  }
+
+  // modal helper
+  function mostrar_modal(text){
+    modalText.innerHTML = `<div style="font-family:VT323; font-size:14px; color:var(--pink); margin-bottom:8px">${text}</div>
+      <button id="okModal" class="btn" style="margin-top:6px">OK</button>`;
+    overlay.style.display = 'flex';
+    document.getElementById('okModal').focus();
+    document.getElementById('okModal').onclick = ()=>{ overlay.style.display='none'; };
+  }
+
+  // wire buttons
+  hitBtn.addEventListener('click', pedir_carta);
+  standBtn.addEventListener('click', parar);
+  newBtn.addEventListener('click', nova_rodada);
+
+  // init
+  nova_rodada();
+
+  // keyboard shortcuts: H = hit, S = stand, N = new
+  window.addEventListener('keydown', (e)=>{
+    if(e.key.toLowerCase()==='h') pedir_carta();
+    if(e.key.toLowerCase()==='s') parar();
+    if(e.key.toLowerCase()==='n') nova_rodada();
+  });
+
+})();
+</script>
+</body>
+</html>
